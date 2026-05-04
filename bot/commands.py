@@ -1,6 +1,8 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 from core.database import get_transactions
+from core.database import get_transactions, get_session
+from core.database import Transaction
 from datetime import date
 
 async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -37,3 +39,20 @@ async def history(update: Update, context: ContextTypes.DEFAULT_TYPE):
         lines.append(f"{sign}₹{t.amount:,.0f} {t.note} ({t.date})")
 
     await update.message.reply_text("🧾 Last 10 Transactions\n\n" + "\n".join(lines))
+
+async def undo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.effective_user.id)
+    session = get_session(user_id)
+
+    last = session.query(Transaction).order_by(Transaction.id.desc()).first()
+
+    if not last:
+        await update.message.reply_text("Nothing to undo.")
+        session.close()
+        return
+
+    session.delete(last)
+    session.commit()
+    session.close()
+
+    await update.message.reply_text(f"↩️ Removed: {'+'if last.type == 'income' else '-'}₹{last.amount:,.0f} {last.note}")
