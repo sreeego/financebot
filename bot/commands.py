@@ -56,3 +56,14 @@ async def undo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     session.close()
 
     await update.message.reply_text(f"↩️ Removed: {'+'if last.type == 'income' else '-'}₹{last.amount:,.0f} {last.note}")
+
+async def deletedata(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.effective_user.id)
+    import os
+
+    db_path = f"data/{user_id}.db"
+    if os.path.exists(db_path):
+        os.remove(db_path)
+        await update.message.reply_text("🗑️ All your data has been deleted.")
+    else:
+        await update.message.reply_text("No data found.")
