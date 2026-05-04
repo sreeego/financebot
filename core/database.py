@@ -1,10 +1,9 @@
 from sqlalchemy import create_engine, Column, Integer, String, Float, Date
 from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import date
+import os
 
 Base = declarative_base()
-engine = create_engine("sqlite:///data/finance.db")
-Session = sessionmaker(bind=engine)
 
 
 class Transaction(Base):
@@ -18,13 +17,18 @@ class Transaction(Base):
     note = Column(String)
     date = Column(Date, default=date.today)
 
+def get_session(user_id):
+    os.makedirs("data", exist_ok=True)
+    engine = create_engine(f"sqlite:///data/{user_id}.db")
+    Base.metadata.create_all(engine)
+    return sessionmaker(bind=engine)()
 
 def init_db():
-    Base.metadata.create_all(engine)
+    pass
 
 
 def add_transaction(user_id, amount, type_, category, note, date_=None):
-    session = Session()
+    session = get_session(user_id)
     t = Transaction(
         user_id=user_id,
         amount=amount,
@@ -39,7 +43,7 @@ def add_transaction(user_id, amount, type_, category, note, date_=None):
 
 
 def get_transactions(user_id):
-    session = Session()
-    results = session.query(Transaction).filter_by(user_id=user_id).all()
+    session = get_session(user_id)
+    results = session.query(Transaction).all()
     session.close()
     return results
