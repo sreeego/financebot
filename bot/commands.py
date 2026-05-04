@@ -20,3 +20,20 @@ async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"Expenses:  ₹{expenses:,.0f}\n"
         f"Balance:   ₹{balance:,.0f}"
     )
+
+async def history(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.effective_user.id)
+    transactions = get_transactions(user_id)
+
+    if not transactions:
+        await update.message.reply_text("No transactions found.")
+        return
+
+    last10 = sorted(transactions, key=lambda t: t.date, reverse=True)[:10]
+
+    lines = []
+    for t in last10:
+        sign = "+" if t.type == "income" else "-"
+        lines.append(f"{sign}₹{t.amount:,.0f} {t.note} ({t.date})")
+
+    await update.message.reply_text("🧾 Last 10 Transactions\n\n" + "\n".join(lines))
