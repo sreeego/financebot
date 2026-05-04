@@ -17,6 +17,13 @@ class Transaction(Base):
     note = Column(String)
     date = Column(Date, default=date.today)
 
+class Budget(Base):
+    __tablename__ = "budgets"
+
+    id = Column(Integer, primary_key=True)
+    category = Column(String)
+    limit = Column(Float)
+
 def get_session(user_id):
     os.makedirs("data", exist_ok=True)
     engine = create_engine(f"sqlite:///data/{user_id}.db")
@@ -45,5 +52,22 @@ def add_transaction(user_id, amount, type_, category, note, date_=None):
 def get_transactions(user_id):
     session = get_session(user_id)
     results = session.query(Transaction).all()
+    session.close()
+    return results
+
+def set_budget(user_id, category, limit):
+    session = get_session(user_id)
+    existing = session.query(Budget).filter_by(category=category).first()
+    if existing:
+        existing.limit = limit
+    else:
+        session.add(Budget(category=category, limit=limit))
+    session.commit()
+    session.close()
+
+
+def get_budgets(user_id):
+    session = get_session(user_id)
+    results = session.query(Budget).all()
     session.close()
     return results

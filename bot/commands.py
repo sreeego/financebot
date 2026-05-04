@@ -1,8 +1,6 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-from core.database import get_transactions
-from core.database import get_transactions, get_session
-from core.database import Transaction
+from core.database import get_transactions, get_session, Transaction, set_budget, get_budgets
 from datetime import date
 
 async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -67,3 +65,30 @@ async def deletedata(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("🗑️ All your data has been deleted.")
     else:
         await update.message.reply_text("No data found.")
+
+async def budget(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.effective_user.id)
+
+    if context.args and len(context.args) == 2:
+        category, limit = context.args[0].lower(), float(context.args[1])
+        set_budget(user_id, category, limit)
+        await update.message.reply_text(f"✅ Budget set: ₹{limit:,.0f} for {category}")
+        return
+
+    budgets = get_budgets(user_id)
+    if not budgets:
+        await update.message.reply_text("No budgets set.\nUse: /budget food 3000")
+        return
+
+    now = date.today()
+    transactions = get_transactions(user_id)
+    monthly = [t for t in transactions if t.date.month == now.month and t.date.year == now.year]
+
+    lines = []
+    for b in budgets:
+        spent = sum(t.amount for t in monthly if t.category == b.category and t.type == "expense")
+        percent = (spent / b.limit) * 100 if b.limit else 0
+        status = "🔴" if percent >= 100 else "🟡" if percent >= 80 else "🟢"
+        lines.append(f"{status} {b.category}: ₹{spent:,.0f} / ₹{b.limit:,.0f} ({percent:.0f}%)")
+
+    await update.message.reply_text("💰 Budget Status\n\n" + "\n".join(lines))
