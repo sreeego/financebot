@@ -92,3 +92,16 @@ async def budget(update: Update, context: ContextTypes.DEFAULT_TYPE):
         lines.append(f"{status} {b.category}: ₹{spent:,.0f} / ₹{b.limit:,.0f} ({percent:.0f}%)")
 
     await update.message.reply_text("💰 Budget Status\n\n" + "\n".join(lines))
+
+async def graph(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.effective_user.id)
+    transactions = get_transactions(user_id)
+
+    from reports.graph import generate_graph
+    buf = generate_graph(transactions)
+
+    if not buf:
+        await update.message.reply_text("No expenses found for this month.")
+        return
+
+    await update.message.reply_photo(photo=buf, caption="📊 This month's spending breakdown")
