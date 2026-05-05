@@ -105,3 +105,16 @@ async def graph(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     await update.message.reply_photo(photo=buf, caption="📊 This month's spending breakdown")
+
+async def report(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.effective_user.id)
+    transactions = get_transactions(user_id)
+
+    from reports.export import generate_pdf, generate_excel
+
+    if context.args and context.args[0].lower() == "excel":
+        buf = generate_excel(transactions)
+        await update.message.reply_document(document=buf, filename="report.xlsx", caption="📊 Your Excel report")
+    else:
+        buf = generate_pdf(transactions)
+        await update.message.reply_document(document=buf, filename="report.pdf", caption="📊 Your PDF report")
