@@ -118,3 +118,19 @@ async def report(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         buf = generate_pdf(transactions)
         await update.message.reply_document(document=buf, filename="report.pdf", caption="📊 Your PDF report")
+
+async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.effective_user.id)
+
+    if not context.args:
+        await update.message.reply_text("Usage: /ask how much did I spend on food?")
+        return
+
+    question = " ".join(context.args)
+    transactions = get_transactions(user_id)
+
+    from ai.ask import ask_ai
+    await update.message.reply_text("🤔 Thinking...")
+    answer = ask_ai(question, transactions)
+    await update.message.reply_text(answer)
+
